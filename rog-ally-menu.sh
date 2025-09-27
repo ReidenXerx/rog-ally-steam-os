@@ -8,18 +8,16 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly VERSION="2.0"
 
-# Initialize comprehensive logging
-if [[ -f "$SCRIPT_DIR/logger.sh" ]]; then
-    source "$SCRIPT_DIR/logger.sh"
+# Initialize simple logging (avoid conflicts with logger.sh)
+readonly LOG_DIR="/home/deck/.local/share/rog-ally-suite/logs"
+readonly SESSION_LOG_FILE="${LOG_DIR}/session-$(date +%Y%m%d-%H%M%S).log"
+readonly LATEST_LOG_LINK="${LOG_DIR}/latest.log"
 
-    # Initialize logging but don't redirect stdout/stderr yet
-    # We'll do that after showing initial messages
-    mkdir -p "/home/deck/.local/share/rog-ally-suite/logs"
-    readonly SESSION_LOG_FILE="/home/deck/.local/share/rog-ally-suite/logs/session-$(date +%Y%m%d-%H%M%S).log"
-    readonly LATEST_LOG_LINK="/home/deck/.local/share/rog-ally-suite/logs/latest.log"
+# Create log directory
+mkdir -p "$LOG_DIR"
 
-    # Create session log file
-    cat > "$SESSION_LOG_FILE" << EOF
+# Create session log file header
+cat > "$SESSION_LOG_FILE" << EOF
 ================================================================================
 ROG Ally Suite - Session Log
 Started: $(date)
@@ -31,21 +29,12 @@ Arguments: $*
 
 EOF
 
-    # Create/update latest log symlink
-    rm -f "$LATEST_LOG_LINK"
-    ln -sf "$SESSION_LOG_FILE" "$LATEST_LOG_LINK"
+# Create/update latest log symlink
+rm -f "$LATEST_LOG_LINK"
+ln -sf "$SESSION_LOG_FILE" "$LATEST_LOG_LINK"
 
-    # Set up logging redirection AFTER we show the menu
-    LOGGING_ENABLED=true
-else
-    # Fallback logging if logger.sh is missing
-    readonly LOG_DIR="/home/deck/.local/share/rog-ally-suite/logs"
-    readonly LOGFILE="${LOG_DIR}/menu-$(date +%Y%m%d-%H%M%S).log"
-    mkdir -p "$LOG_DIR"
-
-    # Don't redirect output immediately for fallback either
-    LOGGING_ENABLED=false
-fi
+# Flag to control when to enable logging redirection
+LOGGING_ENABLED=true
 
 # Colors and styling (defined after logging setup)
 readonly RED='\033[0;31m'
@@ -65,25 +54,18 @@ enable_logging() {
         # Set up logging redirection
         exec > >(tee -a "$SESSION_LOG_FILE")
         exec 2> >(tee -a "$SESSION_LOG_FILE" >&2)
-
+        
         # Log system info now that redirection is active
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Logging redirection enabled"
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] ROG Ally Suite Menu v$VERSION started"
-
-        # Log system info
-        if command -v log_system_info &>/dev/null; then
-            log_system_info
-        fi
-
-        # Clean up old logs
-        if command -v cleanup_logs &>/dev/null; then
-            cleanup_logs 30
-        fi
-    elif [[ "$LOGGING_ENABLED" == "false" && -n "${LOGFILE:-}" ]]; then
-        # Fallback logging
-        exec > >(tee -a "$LOGFILE")
-        exec 2> >(tee -a "$LOGFILE" >&2)
-        echo "$(date) [SYSTEM] Fallback logging redirection enabled: $LOGFILE"
+        
+        # Log basic system info
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] User: $(whoami)"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Working Directory: $(pwd)"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Home: $HOME"
+        
+        # Clean up old logs (simple version)
+        find "$LOG_DIR" -name "session-*.log" -mtime +30 -delete 2>/dev/null || true
     fi
 }
 
@@ -158,28 +140,36 @@ wait_for_input() {
     read -n 1 -s
 }
 
+# Simple logging function
+log_message() {
+    local level="$1"
+    shift
+    local message="$*"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    # This will go to both console and log file due to tee redirection
+    echo "$timestamp [$level] $message"
+}
+
 # Execute script with error handling
 run_script() {
     local script_name="$1"
     local description="$2"
-
+    
     log_message "INFO" "$description"
     log_message "DEBUG" "Running: $script_name"
     echo -e "${BLUE}[INFO]${NC} $description"
     echo -e "${DIM}Running: $script_name${NC}"
     echo
-
+    
     if [[ -f "$SCRIPT_DIR/$script_name" ]]; then
         if chmod +x "$SCRIPT_DIR/$script_name"; then
             local exit_code=0
-
-            # Use enhanced logging if available
-            if command -v log_script_execution &>/dev/null; then
-                log_script_execution "$SCRIPT_DIR/$script_name" "$description" || exit_code=$?
-            else
-                "$SCRIPT_DIR/$script_name" || exit_code=$?
-            fi
-
+            
+            echo "--- SCRIPT EXECUTION START: $script_name ---"
+            "$SCRIPT_DIR/$script_name" || exit_code=$?
+            echo "--- SCRIPT EXECUTION END: $script_name (Exit Code: $exit_code) ---"
+            
             echo
             if [[ $exit_code -eq 0 ]]; then
                 echo -e "${GREEN}✓ Success!${NC} $description completed."
@@ -197,7 +187,7 @@ run_script() {
         echo -e "${RED}✗ Error!${NC} Script $script_name not found."
         log_message "ERROR" "Script not found: $script_name"
     fi
-
+    
     echo
     wait_for_input
 }
@@ -659,11 +649,9 @@ main() {
 
     while true; do
         read -p "Select an option: " choice
-
+        
         # Log user selection
-        if command -v log_message &>/dev/null; then
-            log_message "DEBUG" "User selected option: $choice"
-        fi
+        log_message "DEBUG" "User selected option: $choice"
 
         case $choice in
             1)
