@@ -179,10 +179,10 @@ setup_pacman() {
         log "WARN" "Failed to sign G14 key, continuing anyway"
     }
 
-    # Add G14 repository to pacman.conf
+    # Add G14 repository to pacman.conf if not present
     if ! grep -q "\[g14\]" /etc/pacman.conf; then
         log "INFO" "Adding G14 repository to pacman.conf..."
-
+        
         local repo_config
         repo_config=$(cat << EOF
 
@@ -191,11 +191,23 @@ SigLevel = Never
 Server = ${G14_REPO_URL}
 EOF
         )
-
+        
         echo "$repo_config" | sudo tee -a /etc/pacman.conf > /dev/null
         log "SUCCESS" "G14 repository added"
     else
         log "INFO" "G14 repository already present in pacman.conf"
+    fi
+    
+    # Force database refresh for g14 repo (common issue on SteamOS)
+    log "INFO" "Refreshing G14 repository database..."
+    if ! sudo pacman -Sy --noconfirm; then
+        log "WARN" "Initial database refresh failed, trying alternative approach..."
+        # Sometimes the database needs to be cleared first
+        sudo rm -f /usr/lib/holo/pacmandb/sync/g14.db* 2>/dev/null || true
+        if ! sudo pacman -Sy --noconfirm; then
+            log "ERROR" "Failed to refresh package databases after multiple attempts"
+            return 1
+        fi
     fi
 
     # Update package databases
