@@ -112,24 +112,24 @@ wait_for_input() {
 run_script() {
     local script_name="$1"
     local description="$2"
-    
+
     log_message "INFO" "$description"
     log_message "DEBUG" "Running: $script_name"
     echo -e "${BLUE}[INFO]${NC} $description"
     echo -e "${DIM}Running: $script_name${NC}"
     echo
-    
+
     if [[ -f "$SCRIPT_DIR/$script_name" ]]; then
         if chmod +x "$SCRIPT_DIR/$script_name"; then
             local exit_code=0
-            
+
             # Use enhanced logging if available
             if command -v log_script_execution &>/dev/null; then
                 log_script_execution "$SCRIPT_DIR/$script_name" "$description" || exit_code=$?
             else
                 "$SCRIPT_DIR/$script_name" || exit_code=$?
             fi
-            
+
             echo
             if [[ $exit_code -eq 0 ]]; then
                 echo -e "${GREEN}✓ Success!${NC} $description completed."
@@ -147,7 +147,7 @@ run_script() {
         echo -e "${RED}✗ Error!${NC} Script $script_name not found."
         log_message "ERROR" "Script not found: $script_name"
     fi
-    
+
     echo
     wait_for_input
 }
@@ -595,12 +595,12 @@ main() {
     if command -v show_log_location &>/dev/null; then
         show_log_location
     fi
-    
+
     while true; do
         show_header
         show_status
         show_menu
-        
+
         read -p "Select an option: " choice
         log_message "DEBUG" "User selected option: $choice"
 

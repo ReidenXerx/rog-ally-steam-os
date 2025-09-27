@@ -23,7 +23,7 @@ readonly NC='\033[0m'
 init_logging() {
     # Ensure log directory exists
     mkdir -p "$LOG_BASE_DIR"
-    
+
     # Create session log file
     cat > "$SESSION_LOG_FILE" << EOF
 ================================================================================
@@ -36,15 +36,15 @@ Arguments: $*
 ================================================================================
 
 EOF
-    
+
     # Create/update latest log symlink
     rm -f "$LATEST_LOG_LINK"
     ln -sf "$SESSION_LOG_FILE" "$LATEST_LOG_LINK"
-    
+
     # Set up logging redirection
     exec > >(tee -a "$SESSION_LOG_FILE")
     exec 2> >(tee -a "$SESSION_LOG_FILE" >&2)
-    
+
     echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Logging initialized: $SESSION_LOG_FILE"
 }
 
@@ -54,7 +54,7 @@ log_message() {
     shift
     local message="$*"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
+
     # Format the message with color and timestamp
     local formatted_message
     case "$level" in
@@ -66,7 +66,7 @@ log_message() {
         "SYSTEM")   formatted_message="${PURPLE}[SYSTEM]${NC} $message" ;;
         *)          formatted_message="[$level] $message" ;;
     esac
-    
+
     # Output to console (which also goes to log via tee)
     echo -e "$timestamp $formatted_message"
 }
@@ -76,17 +76,17 @@ log_command() {
     local description="$1"
     shift
     local command="$*"
-    
+
     log_message "SYSTEM" "Executing: $description"
     log_message "DEBUG" "Command: $command"
     echo "--- COMMAND OUTPUT START ---"
-    
+
     local exit_code=0
     eval "$command" || exit_code=$?
-    
+
     echo "--- COMMAND OUTPUT END (Exit Code: $exit_code) ---"
     log_message "SYSTEM" "Command completed with exit code: $exit_code"
-    
+
     return $exit_code
 }
 
@@ -94,19 +94,19 @@ log_command() {
 log_script_execution() {
     local script_path="$1"
     local description="$2"
-    
+
     log_message "SYSTEM" "Starting script: $description"
     log_message "DEBUG" "Script path: $script_path"
-    
+
     if [[ -f "$script_path" ]]; then
         echo "--- SCRIPT EXECUTION START: $(basename "$script_path") ---"
-        
+
         local exit_code=0
         "$script_path" || exit_code=$?
-        
+
         echo "--- SCRIPT EXECUTION END: $(basename "$script_path") (Exit Code: $exit_code) ---"
         log_message "SYSTEM" "Script completed: $description (Exit Code: $exit_code)"
-        
+
         return $exit_code
     else
         log_message "ERROR" "Script not found: $script_path"
@@ -118,44 +118,44 @@ log_script_execution() {
 log_system_info() {
     log_message "SYSTEM" "Capturing system information"
     echo "--- SYSTEM INFORMATION START ---"
-    
+
     echo "Timestamp: $(date)"
     echo "User: $(whoami)"
     echo "Home: $HOME"
     echo "PWD: $(pwd)"
     echo "Shell: $SHELL"
     echo "PATH: $PATH"
-    
+
     if [[ -f /etc/os-release ]]; then
         echo ""
         echo "OS Information:"
         cat /etc/os-release
     fi
-    
+
     echo ""
     echo "System Load:"
     uptime
-    
+
     echo ""
     echo "Memory Usage:"
     free -h
-    
+
     echo ""
     echo "Disk Usage:"
     df -h /
-    
+
     echo "--- SYSTEM INFORMATION END ---"
 }
 
 # Cleanup old log files
 cleanup_logs() {
     local retention_days="${1:-30}"
-    
+
     log_message "SYSTEM" "Cleaning up logs older than $retention_days days"
-    
+
     # Find and remove old log files
     find "$LOG_BASE_DIR" -name "session-*.log" -mtime +$retention_days -delete 2>/dev/null || true
-    
+
     local remaining_logs=$(find "$LOG_BASE_DIR" -name "session-*.log" | wc -l)
     log_message "SUCCESS" "Log cleanup completed. $remaining_logs session logs remaining."
 }

@@ -17,7 +17,7 @@ if [[ -f "$BASE_DIR/logger.sh" ]]; then
     log_message "SYSTEM" "ROG Ally System Restoration started"
     log_system_info
     cleanup_logs 30
-    
+
     # Use the session log from logger
     readonly LOG_DIR="$(dirname "$(get_current_log)")"
     readonly LOGFILE="$(get_current_log)"
@@ -61,21 +61,21 @@ log() {
     local level="$1"
     shift
     local message="$*"
-    
+
     # Use enhanced logging if available, otherwise fallback
     if command -v log_message &>/dev/null; then
         log_message "$level" "$message"
     else
         # Fallback logging
         local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-        
+
         case "$level" in
             "INFO")  echo -e "${BLUE}[INFO]${NC} $message" ;;
             "WARN")  echo -e "${YELLOW}[WARN]${NC} $message" ;;
             "ERROR") echo -e "${RED}[ERROR]${NC} $message" ;;
             "SUCCESS") echo -e "${GREEN}[SUCCESS]${NC} $message" ;;
         esac
-        
+
         echo "[$timestamp] [$level] $message" >> "$LOGFILE"
     fi
 }
