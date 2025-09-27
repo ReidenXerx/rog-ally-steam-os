@@ -4,7 +4,28 @@
 
 set -euo pipefail
 
-# Colors and styling
+# Configuration
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly VERSION="2.0"
+
+# Initialize comprehensive logging
+if [[ -f "$SCRIPT_DIR/logger.sh" ]]; then
+    source "$SCRIPT_DIR/logger.sh"
+    init_logging "$@"
+    log_message "SYSTEM" "ROG Ally Suite Menu v$VERSION started"
+    log_system_info
+    cleanup_logs 30
+else
+    # Fallback logging if logger.sh is missing
+    readonly LOG_DIR="/home/deck/.local/share/rog-ally-suite/logs"
+    readonly LOGFILE="${LOG_DIR}/menu-$(date +%Y%m%d-%H%M%S).log"
+    mkdir -p "$LOG_DIR"
+    exec > >(tee -a "$LOGFILE")
+    exec 2> >(tee -a "$LOGFILE" >&2)
+    echo "$(date) [SYSTEM] Fallback logging initialized: $LOGFILE"
+fi
+
+# Colors and styling (defined after logging setup)
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
@@ -15,10 +36,6 @@ readonly WHITE='\033[1;37m'
 readonly BOLD='\033[1m'
 readonly DIM='\033[2m'
 readonly NC='\033[0m'
-
-# Configuration
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly VERSION="2.0"
 
 # Clear screen and show header
 show_header() {
@@ -95,30 +112,42 @@ wait_for_input() {
 run_script() {
     local script_name="$1"
     local description="$2"
-
+    
+    log_message "INFO" "$description"
+    log_message "DEBUG" "Running: $script_name"
     echo -e "${BLUE}[INFO]${NC} $description"
     echo -e "${DIM}Running: $script_name${NC}"
     echo
-
+    
     if [[ -f "$SCRIPT_DIR/$script_name" ]]; then
         if chmod +x "$SCRIPT_DIR/$script_name"; then
             local exit_code=0
-            "$SCRIPT_DIR/$script_name" || exit_code=$?
-
+            
+            # Use enhanced logging if available
+            if command -v log_script_execution &>/dev/null; then
+                log_script_execution "$SCRIPT_DIR/$script_name" "$description" || exit_code=$?
+            else
+                "$SCRIPT_DIR/$script_name" || exit_code=$?
+            fi
+            
             echo
             if [[ $exit_code -eq 0 ]]; then
                 echo -e "${GREEN}✓ Success!${NC} $description completed."
+                log_message "SUCCESS" "$description completed successfully"
             else
                 echo -e "${YELLOW}⚠ Completed with warnings.${NC} $description finished but check output above for any issues."
+                log_message "WARN" "$description completed with warnings (exit code: $exit_code)"
             fi
         else
             echo
             echo -e "${RED}✗ Error!${NC} Cannot make $script_name executable."
+            log_message "ERROR" "Cannot make $script_name executable"
         fi
     else
         echo -e "${RED}✗ Error!${NC} Script $script_name not found."
+        log_message "ERROR" "Script not found: $script_name"
     fi
-
+    
     echo
     wait_for_input
 }
@@ -536,14 +565,14 @@ troubleshooting_menu() {
                 echo
                 echo -e "${BLUE}[INFO]${NC} Clearing package cache..."
                 sudo rm -rf /var/cache/pacman/pkg/* 2>/dev/null || echo "Cache clear failed"
-                
+
                 echo -e "${BLUE}[INFO]${NC} Refreshing package database..."
                 sudo pacman -Sy || echo "Database refresh failed"
-                
+
                 echo -e "${BLUE}[INFO]${NC} Reinitializing package keys..."
                 sudo pacman-key --init || echo "Key init failed"
                 sudo pacman-key --populate archlinux || echo "Key populate failed"
-                
+
                 echo -e "${GREEN}✓${NC} Signature fix completed"
                 echo "Try running the installation again"
             fi
@@ -562,12 +591,18 @@ troubleshooting_menu() {
 
 # Main menu loop
 main() {
+    # Show log location at startup
+    if command -v show_log_location &>/dev/null; then
+        show_log_location
+    fi
+    
     while true; do
         show_header
         show_status
         show_menu
-
+        
         read -p "Select an option: " choice
+        log_message "DEBUG" "User selected option: $choice"
 
         case $choice in
             1)

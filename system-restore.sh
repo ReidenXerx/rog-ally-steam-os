@@ -8,12 +8,28 @@ set -euo pipefail
 # Configuration
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly BASE_DIR="$(dirname "$SCRIPT_DIR")"
-readonly LOG_DIR="${BASE_DIR}/logs"
 readonly CONFIG_DIR="/home/deck/.config/rog-ally-suite"
-readonly LOGFILE="${LOG_DIR}/restore-$(date +%Y%m%d-%H%M%S).log"
 
-# Ensure log directory exists
-mkdir -p "$LOG_DIR"
+# Initialize comprehensive logging
+if [[ -f "$BASE_DIR/logger.sh" ]]; then
+    source "$BASE_DIR/logger.sh"
+    init_logging "$@"
+    log_message "SYSTEM" "ROG Ally System Restoration started"
+    log_system_info
+    cleanup_logs 30
+    
+    # Use the session log from logger
+    readonly LOG_DIR="$(dirname "$(get_current_log)")"
+    readonly LOGFILE="$(get_current_log)"
+else
+    # Fallback logging if logger.sh is missing
+    readonly LOG_DIR="${BASE_DIR}/logs"
+    readonly LOGFILE="${LOG_DIR}/restore-$(date +%Y%m%d-%H%M%S).log"
+    mkdir -p "$LOG_DIR"
+    exec > >(tee -a "$LOGFILE")
+    exec 2> >(tee -a "$LOGFILE" >&2)
+    echo "$(date) [SYSTEM] Fallback logging initialized: $LOGFILE"
+fi
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -40,21 +56,28 @@ load_config() {
     fi
 }
 
-# Logging function
+# Logging function (enhanced with universal logger)
 log() {
     local level="$1"
     shift
     local message="$*"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-
-    case "$level" in
-        "INFO")  echo -e "${BLUE}[INFO]${NC} $message" ;;
-        "WARN")  echo -e "${YELLOW}[WARN]${NC} $message" ;;
-        "ERROR") echo -e "${RED}[ERROR]${NC} $message" ;;
-        "SUCCESS") echo -e "${GREEN}[SUCCESS]${NC} $message" ;;
-    esac
-
-    echo "[$timestamp] [$level] $message" >> "$LOGFILE"
+    
+    # Use enhanced logging if available, otherwise fallback
+    if command -v log_message &>/dev/null; then
+        log_message "$level" "$message"
+    else
+        # Fallback logging
+        local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+        
+        case "$level" in
+            "INFO")  echo -e "${BLUE}[INFO]${NC} $message" ;;
+            "WARN")  echo -e "${YELLOW}[WARN]${NC} $message" ;;
+            "ERROR") echo -e "${RED}[ERROR]${NC} $message" ;;
+            "SUCCESS") echo -e "${GREEN}[SUCCESS]${NC} $message" ;;
+        esac
+        
+        echo "[$timestamp] [$level] $message" >> "$LOGFILE"
+    fi
 }
 
 # Cleanup old logs
@@ -223,46 +246,46 @@ EOF
 # Install required packages
 install_packages() {
     log "INFO" "Installing required packages..."
-    
+
     local missing_packages=()
-    
+
     # Check which packages are missing
     for package in "${REQUIRED_PACKAGES[@]}"; do
         if ! pacman -Qi "$package" &>/dev/null; then
             missing_packages+=("$package")
         fi
     done
-    
+
     if [[ ${#missing_packages[@]} -eq 0 ]]; then
         log "SUCCESS" "All required packages are already installed"
         return 0
     fi
-    
+
     log "INFO" "Installing missing packages: ${missing_packages[*]}"
-    
+
     # First attempt: Standard installation
     if sudo pacman -S --noconfirm "${missing_packages[@]}"; then
         log "SUCCESS" "Packages installed successfully"
         return 0
     fi
-    
+
     log "WARN" "Standard installation failed, trying alternative approaches..."
-    
+
     # Second attempt: Skip signature verification for problematic packages
     log "INFO" "Attempting installation with relaxed signature checking..."
     if sudo pacman -S --noconfirm --assume-installed gnupg "${missing_packages[@]}"; then
         log "SUCCESS" "Packages installed with relaxed signature checking"
         return 0
     fi
-    
+
     # Third attempt: Install packages individually to isolate issues
     log "INFO" "Attempting individual package installation..."
     local installed_packages=()
     local failed_packages=()
-    
+
     for package in "${missing_packages[@]}"; do
         log "INFO" "Installing $package individually..."
-        
+
         # Try standard install first
         if sudo pacman -S --noconfirm "$package"; then
             installed_packages+=("$package")
@@ -280,19 +303,19 @@ install_packages() {
             fi
         fi
     done
-    
+
     # Report results
     if [[ ${#installed_packages[@]} -gt 0 ]]; then
         log "SUCCESS" "Successfully installed: ${installed_packages[*]}"
     fi
-    
+
     if [[ ${#failed_packages[@]} -gt 0 ]]; then
         log "ERROR" "Failed to install: ${failed_packages[*]}"
         log "WARN" "This may be due to SteamOS signature issues. You can try:"
         log "WARN" "1. Reboot and run the script again"
         log "WARN" "2. Clear package cache: sudo rm -rf /var/cache/pacman/pkg/*"
         log "WARN" "3. Refresh keys: sudo pacman-key --refresh-keys"
-        
+
         # Don't fail completely if at least some packages were installed
         if [[ ${#installed_packages[@]} -gt 0 ]]; then
             log "WARN" "Partial installation completed, continuing..."
@@ -301,7 +324,7 @@ install_packages() {
             return 1
         fi
     fi
-    
+
     log "SUCCESS" "All packages installed successfully"
     return 0
 }
