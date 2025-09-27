@@ -63,13 +63,13 @@ confirm_cleanup() {
 # Remove legacy scripts
 remove_legacy_scripts() {
     log "INFO" "Removing legacy ROG Ally scripts..."
-    
+
     local legacy_scripts=(
         "/home/deck/restore_asusctl.sh"
         "/home/deck/rogfix-repair.sh"
         "/home/deck/startup-wrapper.sh"
     )
-    
+
     local removed=0
     for script in "${legacy_scripts[@]}"; do
         if [[ -f "$script" ]]; then
@@ -83,18 +83,18 @@ remove_legacy_scripts() {
             log "INFO" "Not found: $script"
         fi
     done
-    
+
     log "INFO" "Removed $removed legacy script(s)"
 }
 
 # Remove legacy autostart entries
 remove_legacy_autostart() {
     log "INFO" "Removing legacy autostart entries..."
-    
+
     local legacy_autostart=(
         "/home/deck/.config/autostart/rogfix.desktop"
     )
-    
+
     local removed=0
     for entry in "${legacy_autostart[@]}"; do
         if [[ -f "$entry" ]]; then
@@ -108,20 +108,20 @@ remove_legacy_autostart() {
             log "INFO" "Not found: $entry"
         fi
     done
-    
+
     log "INFO" "Removed $removed legacy autostart entrie(s)"
 }
 
 # Remove legacy log files
 remove_legacy_logs() {
     log "INFO" "Removing legacy log files..."
-    
+
     local legacy_logs=(
         "/home/deck/rogfix.log"
         "/home/deck/fixlog.log"
         "/home/deck/startup.log"
     )
-    
+
     local removed=0
     for logfile in "${legacy_logs[@]}"; do
         if [[ -f "$logfile" ]]; then
@@ -137,7 +137,7 @@ remove_legacy_logs() {
             log "INFO" "Not found: $logfile"
         fi
     done
-    
+
     log "INFO" "Removed $removed legacy log file(s)"
 }
 
@@ -189,24 +189,24 @@ check_legacy_processes() {
 # Main cleanup function
 main() {
     log "INFO" "Starting legacy ROG Ally scripts cleanup..."
-    
+
     check_user
     confirm_cleanup
-    
+
     local cleanup_errors=0
-    
+
     remove_legacy_scripts || ((cleanup_errors++))
     remove_legacy_autostart || ((cleanup_errors++))
     remove_legacy_logs || ((cleanup_errors++))
     remove_legacy_sudoers || ((cleanup_errors++))
     check_legacy_processes || true  # This shouldn't cause failure
-    
+
     if [[ $cleanup_errors -eq 0 ]]; then
         log "SUCCESS" "Legacy cleanup completed successfully!"
     else
         log "SUCCESS" "Legacy cleanup completed with $cleanup_errors warnings (check output above)"
     fi
-    
+
     echo
     echo -e "${GREEN}Cleanup Summary:${NC}"
     echo "✓ Legacy scripts processed"
@@ -219,7 +219,7 @@ main() {
     echo "1. Run the new installer: ./install.sh"
     echo "2. Configure settings: ~/.config/rog-ally-suite/config.conf"
     echo "3. Test the restoration: ~/.local/share/rog-ally-suite/scripts/system-restore.sh"
-    
+
     # Exit with success even if there were warnings
     exit 0
 }

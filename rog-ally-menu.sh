@@ -95,16 +95,16 @@ wait_for_input() {
 run_script() {
     local script_name="$1"
     local description="$2"
-    
+
     echo -e "${BLUE}[INFO]${NC} $description"
     echo -e "${DIM}Running: $script_name${NC}"
     echo
-    
+
     if [[ -f "$SCRIPT_DIR/$script_name" ]]; then
         if chmod +x "$SCRIPT_DIR/$script_name"; then
             local exit_code=0
             "$SCRIPT_DIR/$script_name" || exit_code=$?
-            
+
             echo
             if [[ $exit_code -eq 0 ]]; then
                 echo -e "${GREEN}✓ Success!${NC} $description completed."
@@ -118,7 +118,7 @@ run_script() {
     else
         echo -e "${RED}✗ Error!${NC} Script $script_name not found."
     fi
-    
+
     echo
     wait_for_input
 }
