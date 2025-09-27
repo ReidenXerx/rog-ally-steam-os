@@ -11,13 +11,13 @@ readonly VERSION="2.0"
 # Initialize comprehensive logging
 if [[ -f "$SCRIPT_DIR/logger.sh" ]]; then
     source "$SCRIPT_DIR/logger.sh"
-    
+
     # Initialize logging but don't redirect stdout/stderr yet
     # We'll do that after showing initial messages
     mkdir -p "/home/deck/.local/share/rog-ally-suite/logs"
     readonly SESSION_LOG_FILE="/home/deck/.local/share/rog-ally-suite/logs/session-$(date +%Y%m%d-%H%M%S).log"
     readonly LATEST_LOG_LINK="/home/deck/.local/share/rog-ally-suite/logs/latest.log"
-    
+
     # Create session log file
     cat > "$SESSION_LOG_FILE" << EOF
 ================================================================================
@@ -30,11 +30,11 @@ Arguments: $*
 ================================================================================
 
 EOF
-    
+
     # Create/update latest log symlink
     rm -f "$LATEST_LOG_LINK"
     ln -sf "$SESSION_LOG_FILE" "$LATEST_LOG_LINK"
-    
+
     # Set up logging redirection AFTER we show the menu
     LOGGING_ENABLED=true
 else
@@ -42,7 +42,7 @@ else
     readonly LOG_DIR="/home/deck/.local/share/rog-ally-suite/logs"
     readonly LOGFILE="${LOG_DIR}/menu-$(date +%Y%m%d-%H%M%S).log"
     mkdir -p "$LOG_DIR"
-    
+
     # Don't redirect output immediately for fallback either
     LOGGING_ENABLED=false
 fi
@@ -65,16 +65,16 @@ enable_logging() {
         # Set up logging redirection
         exec > >(tee -a "$SESSION_LOG_FILE")
         exec 2> >(tee -a "$SESSION_LOG_FILE" >&2)
-        
+
         # Log system info now that redirection is active
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Logging redirection enabled"
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] ROG Ally Suite Menu v$VERSION started"
-        
+
         # Log system info
         if command -v log_system_info &>/dev/null; then
             log_system_info
         fi
-        
+
         # Clean up old logs
         if command -v cleanup_logs &>/dev/null; then
             cleanup_logs 30
@@ -645,7 +645,7 @@ main() {
     show_header
     show_status
     show_menu
-    
+
     # Show log location info
     if [[ "$LOGGING_ENABLED" == "true" ]]; then
         echo -e "${CYAN}📝 Session log:${NC} $SESSION_LOG_FILE"
@@ -653,13 +653,13 @@ main() {
         echo -e "${DIM}Use 'tail -f $LATEST_LOG_LINK' to follow the log${NC}"
         echo
     fi
-    
+
     # Now enable logging after the user sees the menu
     enable_logging
-    
+
     while true; do
         read -p "Select an option: " choice
-        
+
         # Log user selection
         if command -v log_message &>/dev/null; then
             log_message "DEBUG" "User selected option: $choice"
