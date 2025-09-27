@@ -42,26 +42,44 @@ log_test() {
 }
 
 echo -e "${BLUE}=== SteamOS Compatibility Verification ===${NC}"
+echo "This script verifies that your system has all the necessary components"
+echo "for the ROG Ally Suite to function properly on SteamOS."
+echo
+echo -e "${YELLOW}Note:${NC} This verification should be run on your target SteamOS/Linux system,"
+echo "not on the development machine where you're preparing the scripts."
 echo
 
 # 1. Check if running on SteamOS
 check_steamos() {
     echo -e "${BLUE}[1] Checking SteamOS Environment${NC}"
 
+    # First check if we're on a Unix-like system
+    local uname_output=$(uname -s 2>/dev/null || echo "unknown")
+
+    if [[ "$uname_output" != "Linux" ]]; then
+        log_test "FAIL" "Not running on Linux" "Detected: $uname_output"
+        log_test "FAIL" "Platform compatibility" "This suite requires Linux (SteamOS/Arch)"
+        echo
+        return
+    fi
+
     # Check for SteamOS version file
     if [[ -f /etc/os-release ]]; then
-        local os_name=$(grep '^NAME=' /etc/os-release | cut -d'"' -f2)
-        local os_id=$(grep '^ID=' /etc/os-release | cut -d'=' -f2)
+        local os_name=$(grep '^NAME=' /etc/os-release | cut -d'"' -f2 2>/dev/null || echo "Unknown")
+        local os_id=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 2>/dev/null || echo "unknown")
         local os_version=$(grep '^VERSION=' /etc/os-release | cut -d'"' -f2 2>/dev/null || echo "Unknown")
 
         if [[ "$os_id" == "steamos" || "$os_name" == *"SteamOS"* ]]; then
             log_test "PASS" "SteamOS detected" "$os_name $os_version"
+        elif [[ "$os_id" == "arch" || "$os_name" == *"Arch"* ]]; then
+            log_test "PASS" "Arch Linux detected" "$os_name (compatible with SteamOS)"
         else
-            log_test "WARN" "Not running on SteamOS" "Detected: $os_name (ID: $os_id)"
-            log_test "WARN" "Compatibility note" "Scripts may work on Arch-based systems but are optimized for SteamOS"
+            log_test "WARN" "Different Linux distribution" "Detected: $os_name (ID: $os_id)"
+            log_test "WARN" "Compatibility note" "Scripts are optimized for SteamOS/Arch but may work on other distributions"
         fi
     else
         log_test "FAIL" "Cannot detect OS" "/etc/os-release not found"
+        log_test "WARN" "Compatibility unknown" "Unable to determine Linux distribution"
     fi
     echo
 }
@@ -269,9 +287,6 @@ check_desktop() {
 
 # Main function
 main() {
-    echo "This script verifies that your system has all the necessary components"
-    echo "for the ROG Ally Suite to function properly on SteamOS."
-    echo
 
     check_steamos
     check_deck_user
