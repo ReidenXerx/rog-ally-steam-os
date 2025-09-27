@@ -11,18 +11,40 @@ readonly VERSION="2.0"
 # Initialize comprehensive logging
 if [[ -f "$SCRIPT_DIR/logger.sh" ]]; then
     source "$SCRIPT_DIR/logger.sh"
-    init_logging "$@"
-    log_message "SYSTEM" "ROG Ally Suite Menu v$VERSION started"
-    log_system_info
-    cleanup_logs 30
+    
+    # Initialize logging but don't redirect stdout/stderr yet
+    # We'll do that after showing initial messages
+    mkdir -p "/home/deck/.local/share/rog-ally-suite/logs"
+    readonly SESSION_LOG_FILE="/home/deck/.local/share/rog-ally-suite/logs/session-$(date +%Y%m%d-%H%M%S).log"
+    readonly LATEST_LOG_LINK="/home/deck/.local/share/rog-ally-suite/logs/latest.log"
+    
+    # Create session log file
+    cat > "$SESSION_LOG_FILE" << EOF
+================================================================================
+ROG Ally Suite - Session Log
+Started: $(date)
+User: $(whoami)
+Working Directory: $(pwd)
+Script: ${0##*/}
+Arguments: $*
+================================================================================
+
+EOF
+    
+    # Create/update latest log symlink
+    rm -f "$LATEST_LOG_LINK"
+    ln -sf "$SESSION_LOG_FILE" "$LATEST_LOG_LINK"
+    
+    # Set up logging redirection AFTER we show the menu
+    LOGGING_ENABLED=true
 else
     # Fallback logging if logger.sh is missing
     readonly LOG_DIR="/home/deck/.local/share/rog-ally-suite/logs"
     readonly LOGFILE="${LOG_DIR}/menu-$(date +%Y%m%d-%H%M%S).log"
     mkdir -p "$LOG_DIR"
-    exec > >(tee -a "$LOGFILE")
-    exec 2> >(tee -a "$LOGFILE" >&2)
-    echo "$(date) [SYSTEM] Fallback logging initialized: $LOGFILE"
+    
+    # Don't redirect output immediately for fallback either
+    LOGGING_ENABLED=false
 fi
 
 # Colors and styling (defined after logging setup)
@@ -36,6 +58,34 @@ readonly WHITE='\033[1;37m'
 readonly BOLD='\033[1m'
 readonly DIM='\033[2m'
 readonly NC='\033[0m'
+
+# Enable logging redirection
+enable_logging() {
+    if [[ "$LOGGING_ENABLED" == "true" ]]; then
+        # Set up logging redirection
+        exec > >(tee -a "$SESSION_LOG_FILE")
+        exec 2> >(tee -a "$SESSION_LOG_FILE" >&2)
+        
+        # Log system info now that redirection is active
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Logging redirection enabled"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] ROG Ally Suite Menu v$VERSION started"
+        
+        # Log system info
+        if command -v log_system_info &>/dev/null; then
+            log_system_info
+        fi
+        
+        # Clean up old logs
+        if command -v cleanup_logs &>/dev/null; then
+            cleanup_logs 30
+        fi
+    elif [[ "$LOGGING_ENABLED" == "false" && -n "${LOGFILE:-}" ]]; then
+        # Fallback logging
+        exec > >(tee -a "$LOGFILE")
+        exec 2> >(tee -a "$LOGFILE" >&2)
+        echo "$(date) [SYSTEM] Fallback logging redirection enabled: $LOGFILE"
+    fi
+}
 
 # Clear screen and show header
 show_header() {
@@ -591,28 +641,48 @@ troubleshooting_menu() {
 
 # Main menu loop
 main() {
-    # Show log location at startup
-    if command -v show_log_location &>/dev/null; then
-        show_log_location
+    # Show initial header and menu before enabling logging
+    show_header
+    show_status
+    show_menu
+    
+    # Show log location info
+    if [[ "$LOGGING_ENABLED" == "true" ]]; then
+        echo -e "${CYAN}📝 Session log:${NC} $SESSION_LOG_FILE"
+        echo -e "${CYAN}🔗 Latest log:${NC} $LATEST_LOG_LINK"
+        echo -e "${DIM}Use 'tail -f $LATEST_LOG_LINK' to follow the log${NC}"
+        echo
     fi
-
+    
+    # Now enable logging after the user sees the menu
+    enable_logging
+    
     while true; do
-        show_header
-        show_status
-        show_menu
-
         read -p "Select an option: " choice
-        log_message "DEBUG" "User selected option: $choice"
+        
+        # Log user selection
+        if command -v log_message &>/dev/null; then
+            log_message "DEBUG" "User selected option: $choice"
+        fi
 
         case $choice in
             1)
                 fresh_installation
+                show_header
+                show_status
+                show_menu
                 ;;
             2)
                 run_script "verify-steamos-compatibility.sh" "Running system compatibility check"
+                show_header
+                show_status
+                show_menu
                 ;;
             3)
                 run_script "install.sh" "Installing/upgrading ROG Ally Suite"
+                show_header
+                show_status
+                show_menu
                 ;;
             4)
                 if [[ -f "/home/deck/.local/share/rog-ally-suite/scripts/system-restore.sh" ]]; then
@@ -634,24 +704,45 @@ main() {
                     echo
                     wait_for_input
                 fi
+                show_header
+                show_status
+                show_menu
                 ;;
             5)
                 configuration_menu
+                show_header
+                show_status
+                show_menu
                 ;;
             6)
                 run_script "cleanup-legacy.sh" "Cleaning up legacy ROG Ally scripts"
+                show_header
+                show_status
+                show_menu
                 ;;
             7)
                 run_script "gather-system-info.sh" "Gathering system information"
+                show_header
+                show_status
+                show_menu
                 ;;
             8)
                 troubleshooting_menu
+                show_header
+                show_status
+                show_menu
                 ;;
             9)
                 run_script "uninstall.sh" "Uninstalling ROG Ally Suite"
+                show_header
+                show_status
+                show_menu
                 ;;
             h|H)
                 help_menu
+                show_header
+                show_status
+                show_menu
                 ;;
             q|Q)
                 echo
@@ -662,6 +753,9 @@ main() {
             *)
                 echo -e "${RED}Invalid option. Please try again.${NC}"
                 sleep 1
+                show_header
+                show_status
+                show_menu
                 ;;
         esac
     done
