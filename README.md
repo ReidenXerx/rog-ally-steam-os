@@ -40,11 +40,12 @@ SteamOS is an immutable operating system that wipes custom installations during 
 ```
 
 The menu provides:
-- 🆕 **Fresh Installation Wizard** - Perfect for new users
-- ✅ **System Compatibility Check** - Verify your setup
-- ⚙️ **Configuration Manager** - Easy settings management
-- 🔧 **Troubleshooting Tools** - Fix issues quickly
-- 📚 **Built-in Help System** - No need to read docs
+
+-   🆕 **Fresh Installation Wizard** - Perfect for new users
+-   ✅ **System Compatibility Check** - Verify your setup
+-   ⚙️ **Configuration Manager** - Easy settings management
+-   🔧 **Troubleshooting Tools** - Fix issues quickly
+-   📚 **Built-in Help System** - No need to read docs
 
 ### 🚀 **Manual Installation (Advanced Users)**
 

@@ -17,26 +17,26 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "$SCRIPT_DIR/rog-ally-menu.sh" ]]; then
     echo -e "${BLUE}🎮 Starting ROG Ally Suite...${NC}"
     echo
-    
+
     # Make sure it's executable
     chmod +x "$SCRIPT_DIR/rog-ally-menu.sh"
-    
+
     # Run the main menu
     exec "$SCRIPT_DIR/rog-ally-menu.sh"
 else
     echo -e "${YELLOW}⚠ ROG Ally Suite main menu not found.${NC}"
     echo
     echo "Available options:"
-    
+
     # Check what scripts are available
     if [[ -f "$SCRIPT_DIR/install.sh" ]]; then
         echo -e "• Run installer: ${GREEN}./install.sh${NC}"
     fi
-    
+
     if [[ -f "$SCRIPT_DIR/verify-steamos-compatibility.sh" ]]; then
         echo -e "• Check compatibility: ${GREEN}./verify-steamos-compatibility.sh${NC}"
     fi
-    
+
     echo
     echo "Please ensure all ROG Ally Suite files are present in this directory."
 fi

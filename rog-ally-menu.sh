@@ -33,11 +33,11 @@ show_header() {
 # Show system status
 show_status() {
     echo -e "${BOLD}📊 System Status:${NC}"
-    
+
     # Check if suite is installed
     if [[ -d "/home/deck/.local/share/rog-ally-suite" ]]; then
         echo -e "   ${GREEN}✓${NC} ROG Ally Suite: ${GREEN}Installed${NC}"
-        
+
         # Check if asusctl is available
         if command -v asusctl &>/dev/null; then
             local battery_limit=$(asusctl -c 2>/dev/null | grep -o '[0-9]\+' || echo "Unknown")
@@ -45,7 +45,7 @@ show_status() {
         else
             echo -e "   ${YELLOW}⚠${NC} ASUS Controls: ${YELLOW}Not installed${NC}"
         fi
-        
+
         # Check service status
         if systemctl --user is-enabled rog-ally-restore.service &>/dev/null; then
             echo -e "   ${GREEN}✓${NC} Auto-restore: ${GREEN}Enabled${NC}"
@@ -55,7 +55,7 @@ show_status() {
     else
         echo -e "   ${RED}✗${NC} ROG Ally Suite: ${RED}Not installed${NC}"
     fi
-    
+
     # Check SteamOS
     if [[ -f /etc/os-release ]] && grep -q "steamos" /etc/os-release; then
         local steamos_version=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 || echo "Unknown")
@@ -63,7 +63,7 @@ show_status() {
     else
         echo -e "   ${YELLOW}⚠${NC} SteamOS: ${YELLOW}Not detected${NC}"
     fi
-    
+
     echo
 }
 
@@ -95,11 +95,11 @@ wait_for_input() {
 run_script() {
     local script_name="$1"
     local description="$2"
-    
+
     echo -e "${BLUE}[INFO]${NC} $description"
     echo -e "${DIM}Running: $script_name${NC}"
     echo
-    
+
     if [[ -f "$SCRIPT_DIR/$script_name" ]]; then
         if chmod +x "$SCRIPT_DIR/$script_name" && "$SCRIPT_DIR/$script_name"; then
             echo
@@ -111,7 +111,7 @@ run_script() {
     else
         echo -e "${RED}✗ Error!${NC} Script $script_name not found."
     fi
-    
+
     echo
     wait_for_input
 }
@@ -134,25 +134,25 @@ fresh_installation() {
     echo "3. Install ASUS packages"
     echo "4. Configure settings"
     echo
-    
+
     read -p "Continue with fresh installation? (y/N): " -r
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         return
     fi
-    
+
     echo
     echo -e "${BOLD}Step 1: Compatibility Check${NC}"
     run_script "verify-steamos-compatibility.sh" "Checking system compatibility"
-    
+
     echo -e "${BOLD}Step 2: Installing Suite${NC}"
     run_script "install.sh" "Installing ROG Ally Suite"
-    
+
     echo -e "${BOLD}Step 3: Installing ASUS Packages${NC}"
     if [[ -f "/home/deck/.local/share/rog-ally-suite/scripts/system-restore.sh" ]]; then
         echo -e "${BLUE}[INFO]${NC} Installing ASUS hardware controls"
         echo -e "${DIM}Running: system-restore.sh${NC}"
         echo
-        
+
         if /home/deck/.local/share/rog-ally-suite/scripts/system-restore.sh; then
             echo
             echo -e "${GREEN}✓ Success!${NC} ASUS controls installed and configured."
@@ -163,7 +163,7 @@ fresh_installation() {
     else
         echo -e "${RED}✗ Error!${NC} Suite installation incomplete."
     fi
-    
+
     echo
     echo -e "${BOLD}Step 4: Final Verification${NC}"
     if command -v asusctl &>/dev/null; then
@@ -182,7 +182,7 @@ fresh_installation() {
     else
         echo -e "${RED}✗ Installation incomplete.${NC} Please check the logs and try again."
     fi
-    
+
     echo
     wait_for_input
 }
@@ -193,7 +193,7 @@ configuration_menu() {
         show_header
         echo -e "${BOLD}⚙️ Configuration Menu${NC}"
         echo
-        
+
         local config_file="/home/deck/.config/rog-ally-suite/config.conf"
         if [[ -f "$config_file" ]]; then
             echo -e "${BOLD}Current Settings:${NC}"
@@ -208,7 +208,7 @@ configuration_menu() {
             wait_for_input
             return
         fi
-        
+
         echo -e "${BOLD}Configuration Options:${NC}"
         echo
         echo -e "   ${CYAN}1.${NC} Change battery charge limit"
@@ -218,9 +218,9 @@ configuration_menu() {
         echo -e "   ${CYAN}5.${NC} Apply current configuration"
         echo -e "   ${CYAN}b.${NC} Back to main menu"
         echo
-        
+
         read -p "Select option: " choice
-        
+
         case $choice in
             1)
                 echo
@@ -232,7 +232,7 @@ configuration_menu() {
                 echo -e "• ${GREEN}100%${NC} - Disable limiting (not recommended)"
                 echo
                 read -p "Enter new battery limit (60-100): " new_limit
-                
+
                 if [[ "$new_limit" =~ ^[0-9]+$ ]] && [[ $new_limit -ge 60 ]] && [[ $new_limit -le 100 ]]; then
                     sed -i "s/^BATTERY_LIMIT=.*/BATTERY_LIMIT=$new_limit/" "$config_file"
                     echo -e "${GREEN}✓${NC} Battery limit set to ${new_limit}%"
@@ -327,16 +327,16 @@ help_menu() {
         echo -e "   ${CYAN}4.${NC} About ROG Ally Suite        - Project information"
         echo -e "   ${CYAN}b.${NC} Back to main menu"
         echo
-        
+
         read -p "Select guide: " choice
-        
+
         case $choice in
             1)
                 if [[ -f "$SCRIPT_DIR/FRESH-INSTALL-GUIDE.md" ]]; then
                     echo
                     echo -e "${BOLD}Fresh Installation Guide${NC}"
                     echo -e "${DIM}Opening guide...${NC}"
-                    
+
                     if command -v less &>/dev/null; then
                         less "$SCRIPT_DIR/FRESH-INSTALL-GUIDE.md"
                     else
@@ -436,15 +436,15 @@ troubleshooting_menu() {
     echo -e "   ${CYAN}5.${NC} Force Package Reinstall"
     echo -e "   ${CYAN}b.${NC} Back to main menu"
     echo
-    
+
     read -p "Select tool: " choice
-    
+
     case $choice in
         1)
             echo
             echo -e "${BOLD}Quick System Check${NC}"
             echo
-            
+
             # Check basic functionality
             if command -v asusctl &>/dev/null; then
                 echo -e "${GREEN}✓${NC} asusctl: Available"
@@ -452,19 +452,19 @@ troubleshooting_menu() {
             else
                 echo -e "${RED}✗${NC} asusctl: Not installed"
             fi
-            
+
             if systemctl --user is-active --quiet rog-ally-restore.service; then
                 echo -e "${GREEN}✓${NC} Service: Running"
             else
                 echo -e "${RED}✗${NC} Service: Not running"
             fi
-            
+
             if systemctl is-active --quiet power-profiles-daemon.service; then
                 echo -e "${GREEN}✓${NC} Power profiles: Active"
             else
                 echo -e "${RED}✗${NC} Power profiles: Inactive"
             fi
-            
+
             echo
             wait_for_input
             ;;
@@ -491,10 +491,10 @@ troubleshooting_menu() {
             echo
             echo -e "${BOLD}Resetting Services${NC}"
             echo
-            
+
             systemctl --user daemon-reload
             systemctl --user restart rog-ally-restore.service || echo "Service restart failed"
-            
+
             echo -e "${GREEN}✓${NC} Services reset"
             echo
             wait_for_input
@@ -530,9 +530,9 @@ main() {
         show_header
         show_status
         show_menu
-        
+
         read -p "Select an option: " choice
-        
+
         case $choice in
             1)
                 fresh_installation
@@ -548,7 +548,7 @@ main() {
                     echo -e "${BLUE}[INFO]${NC} Manually restoring ASUS controls"
                     echo -e "${DIM}Running: system-restore.sh${NC}"
                     echo
-                    
+
                     if /home/deck/.local/share/rog-ally-suite/scripts/system-restore.sh; then
                         echo
                         echo -e "${GREEN}✓ Success!${NC} ASUS controls restored."
