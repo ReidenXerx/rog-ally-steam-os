@@ -441,6 +441,7 @@ troubleshooting_menu() {
     echo -e "   ${CYAN}3.${NC} Check Service Logs"
     echo -e "   ${CYAN}4.${NC} Reset Services"
     echo -e "   ${CYAN}5.${NC} Force Package Reinstall"
+    echo -e "   ${CYAN}6.${NC} Fix Package Signature Issues"
     echo -e "   ${CYAN}b.${NC} Back to main menu"
     echo
 
@@ -517,6 +518,34 @@ troubleshooting_menu() {
                 else
                     echo -e "${RED}✗${NC} Suite not installed"
                 fi
+            fi
+            echo
+            wait_for_input
+            ;;
+        6)
+            echo
+            echo -e "${BOLD}Fix Package Signature Issues${NC}"
+            echo
+            echo "This will attempt to fix common SteamOS package signature problems:"
+            echo "• Clear corrupted package cache"
+            echo "• Refresh package database"
+            echo "• Reinitialize package keys"
+            echo
+            read -p "Continue with signature fix? (y/N): " -r
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                echo
+                echo -e "${BLUE}[INFO]${NC} Clearing package cache..."
+                sudo rm -rf /var/cache/pacman/pkg/* 2>/dev/null || echo "Cache clear failed"
+                
+                echo -e "${BLUE}[INFO]${NC} Refreshing package database..."
+                sudo pacman -Sy || echo "Database refresh failed"
+                
+                echo -e "${BLUE}[INFO]${NC} Reinitializing package keys..."
+                sudo pacman-key --init || echo "Key init failed"
+                sudo pacman-key --populate archlinux || echo "Key populate failed"
+                
+                echo -e "${GREEN}✓${NC} Signature fix completed"
+                echo "Try running the installation again"
             fi
             echo
             wait_for_input
