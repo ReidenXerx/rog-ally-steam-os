@@ -25,34 +25,46 @@ SteamOS is an immutable operating system that wipes custom installations during 
 
 ## 📦 Installation
 
-### Pre-Installation Steps
+### 🎯 **Super Easy Start (Recommended)**
 
-#### 1. Compatibility Check (Recommended)
+**Just run this one command:**
 
-Before installing, verify your system compatibility:
+```bash
+./start.sh
+```
+
+**Or use the full interactive menu:**
+
+```bash
+./rog-ally-menu.sh
+```
+
+The menu provides:
+- 🆕 **Fresh Installation Wizard** - Perfect for new users
+- ✅ **System Compatibility Check** - Verify your setup
+- ⚙️ **Configuration Manager** - Easy settings management
+- 🔧 **Troubleshooting Tools** - Fix issues quickly
+- 📚 **Built-in Help System** - No need to read docs
+
+### 🚀 **Manual Installation (Advanced Users)**
+
+#### Step 1: Compatibility Check
 
 ```bash
 chmod +x verify-steamos-compatibility.sh
 ./verify-steamos-compatibility.sh
 ```
 
-This will check for all required SteamOS-specific components and warn about potential issues.
-
-#### 2. Legacy Cleanup (If Upgrading)
-
-If you have old ROG Ally scripts installed, clean them up first:
+#### Step 2: Legacy Cleanup (If Upgrading)
 
 ```bash
 chmod +x cleanup-legacy.sh
 ./cleanup-legacy.sh
 ```
 
-This removes old scripts, autostart entries, and log files to prevent conflicts.
-
-### Quick Install
+#### Step 3: Install
 
 ```bash
-# Download and run the installer
 chmod +x install.sh
 ./install.sh
 ```

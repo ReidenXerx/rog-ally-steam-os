@@ -16,7 +16,7 @@ log() {
     local level="$1"
     shift
     local message="$*"
-    
+
     case "$level" in
         "INFO")  echo -e "${BLUE}[INFO]${NC} $message" ;;
         "WARN")  echo -e "${YELLOW}[WARN]${NC} $message" ;;
@@ -40,7 +40,7 @@ confirm_cleanup() {
     echo
     echo "Files to be removed:"
     echo "  - /home/deck/restore_asusctl.sh"
-    echo "  - /home/deck/rogfix-repair.sh" 
+    echo "  - /home/deck/rogfix-repair.sh"
     echo "  - /home/deck/startup-wrapper.sh"
     echo "  - /home/deck/.config/autostart/rogfix.desktop"
     echo
@@ -52,7 +52,7 @@ confirm_cleanup() {
     echo "This cleanup is recommended before installing the new ROG Ally Suite"
     echo "to avoid conflicts between old and new scripts."
     echo
-    
+
     read -p "Proceed with cleanup? (yes/no): " -r
     if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
         log "INFO" "Cleanup cancelled by user"
@@ -63,13 +63,13 @@ confirm_cleanup() {
 # Remove legacy scripts
 remove_legacy_scripts() {
     log "INFO" "Removing legacy ROG Ally scripts..."
-    
+
     local legacy_scripts=(
         "/home/deck/restore_asusctl.sh"
         "/home/deck/rogfix-repair.sh"
         "/home/deck/startup-wrapper.sh"
     )
-    
+
     local removed=0
     for script in "${legacy_scripts[@]}"; do
         if [[ -f "$script" ]]; then
@@ -80,18 +80,18 @@ remove_legacy_scripts() {
             log "INFO" "Not found: $script"
         fi
     done
-    
+
     log "INFO" "Removed $removed legacy script(s)"
 }
 
 # Remove legacy autostart entries
 remove_legacy_autostart() {
     log "INFO" "Removing legacy autostart entries..."
-    
+
     local legacy_autostart=(
         "/home/deck/.config/autostart/rogfix.desktop"
     )
-    
+
     local removed=0
     for entry in "${legacy_autostart[@]}"; do
         if [[ -f "$entry" ]]; then
@@ -102,20 +102,20 @@ remove_legacy_autostart() {
             log "INFO" "Not found: $entry"
         fi
     done
-    
+
     log "INFO" "Removed $removed legacy autostart entrie(s)"
 }
 
 # Remove legacy log files
 remove_legacy_logs() {
     log "INFO" "Removing legacy log files..."
-    
+
     local legacy_logs=(
         "/home/deck/rogfix.log"
         "/home/deck/fixlog.log"
         "/home/deck/startup.log"
     )
-    
+
     local removed=0
     for logfile in "${legacy_logs[@]}"; do
         if [[ -f "$logfile" ]]; then
@@ -128,18 +128,18 @@ remove_legacy_logs() {
             log "INFO" "Not found: $logfile"
         fi
     done
-    
+
     log "INFO" "Removed $removed legacy log file(s)"
 }
 
 # Remove legacy sudoers (if any)
 remove_legacy_sudoers() {
     log "INFO" "Checking for legacy sudoers configurations..."
-    
+
     local legacy_sudoers=(
         "/etc/sudoers.d/rogfix"
     )
-    
+
     local removed=0
     for sudoers_file in "${legacy_sudoers[@]}"; do
         if [[ -f "$sudoers_file" ]]; then
@@ -153,7 +153,7 @@ remove_legacy_sudoers() {
             log "INFO" "Not found: $sudoers_file"
         fi
     done
-    
+
     if [[ $removed -eq 0 ]]; then
         log "INFO" "No legacy sudoers configurations found"
     else
@@ -164,9 +164,9 @@ remove_legacy_sudoers() {
 # Check for running legacy processes
 check_legacy_processes() {
     log "INFO" "Checking for running legacy processes..."
-    
+
     local legacy_processes=$(ps aux | grep -E "(restore_asusctl|rogfix|startup-wrapper)" | grep -v grep || true)
-    
+
     if [[ -n "$legacy_processes" ]]; then
         log "WARN" "Found running legacy processes:"
         echo "$legacy_processes"
@@ -180,16 +180,16 @@ check_legacy_processes() {
 # Main cleanup function
 main() {
     log "INFO" "Starting legacy ROG Ally scripts cleanup..."
-    
+
     check_user
     confirm_cleanup
-    
+
     remove_legacy_scripts
     remove_legacy_autostart
     remove_legacy_logs
     remove_legacy_sudoers
     check_legacy_processes
-    
+
     log "SUCCESS" "Legacy cleanup completed!"
     echo
     echo -e "${GREEN}Cleanup Summary:${NC}"

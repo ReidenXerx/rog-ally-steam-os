@@ -182,7 +182,7 @@ setup_pacman() {
     # Add G14 repository to pacman.conf if not present
     if ! grep -q "\[g14\]" /etc/pacman.conf; then
         log "INFO" "Adding G14 repository to pacman.conf..."
-        
+
         local repo_config
         repo_config=$(cat << EOF
 
@@ -191,13 +191,13 @@ SigLevel = Never
 Server = ${G14_REPO_URL}
 EOF
         )
-        
+
         echo "$repo_config" | sudo tee -a /etc/pacman.conf > /dev/null
         log "SUCCESS" "G14 repository added"
     else
         log "INFO" "G14 repository already present in pacman.conf"
     fi
-    
+
     # Force database refresh for g14 repo (common issue on SteamOS)
     log "INFO" "Refreshing G14 repository database..."
     if ! sudo pacman -Sy --noconfirm; then
