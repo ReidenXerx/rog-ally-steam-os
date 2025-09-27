@@ -54,16 +54,16 @@ enable_logging() {
         # Set up logging redirection
         exec > >(tee -a "$SESSION_LOG_FILE")
         exec 2> >(tee -a "$SESSION_LOG_FILE" >&2)
-        
+
         # Log system info now that redirection is active
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Logging redirection enabled"
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] ROG Ally Suite Menu v$VERSION started"
-        
+
         # Log basic system info
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] User: $(whoami)"
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Working Directory: $(pwd)"
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SYSTEM] Home: $HOME"
-        
+
         # Clean up old logs (simple version)
         find "$LOG_DIR" -name "session-*.log" -mtime +30 -delete 2>/dev/null || true
     fi
@@ -146,7 +146,7 @@ log_message() {
     shift
     local message="$*"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
+
     # This will go to both console and log file due to tee redirection
     echo "$timestamp [$level] $message"
 }
@@ -155,21 +155,21 @@ log_message() {
 run_script() {
     local script_name="$1"
     local description="$2"
-    
+
     log_message "INFO" "$description"
     log_message "DEBUG" "Running: $script_name"
     echo -e "${BLUE}[INFO]${NC} $description"
     echo -e "${DIM}Running: $script_name${NC}"
     echo
-    
+
     if [[ -f "$SCRIPT_DIR/$script_name" ]]; then
         if chmod +x "$SCRIPT_DIR/$script_name"; then
             local exit_code=0
-            
+
             echo "--- SCRIPT EXECUTION START: $script_name ---"
             "$SCRIPT_DIR/$script_name" || exit_code=$?
             echo "--- SCRIPT EXECUTION END: $script_name (Exit Code: $exit_code) ---"
-            
+
             echo
             if [[ $exit_code -eq 0 ]]; then
                 echo -e "${GREEN}✓ Success!${NC} $description completed."
@@ -187,7 +187,7 @@ run_script() {
         echo -e "${RED}✗ Error!${NC} Script $script_name not found."
         log_message "ERROR" "Script not found: $script_name"
     fi
-    
+
     echo
     wait_for_input
 }
@@ -649,7 +649,7 @@ main() {
 
     while true; do
         read -p "Select an option: " choice
-        
+
         # Log user selection
         log_message "DEBUG" "User selected option: $choice"
 
